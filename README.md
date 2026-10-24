@@ -23,8 +23,7 @@ Every top-level folder that contains a `.toc` with the same name is one addon, a
 ```
 ChattyLittleNpc_Vanilla_enUS_voiceovers/       <- English pack
     ChattyLittleNpc_Vanilla_enUS_voiceovers.toc   version, title, file list
-    Main.lua                                      registers the pack's global table
-    VoiceoversList.lua                            GENERATED: file list + durations
+    VoiceoversList.lua                            GENERATED: the pack's global table, file list + durations
     voiceovers/                                   the .ogg files, directly in this folder
 ChattyLittleNpc_Vanilla_deDE_voiceovers/       <- e.g. a German pack, same structure
 generate_voiceovers_list.py                    builds VoiceoversList.lua for every pack
@@ -33,7 +32,7 @@ release.py                                     tags a version and creates the Gi
 .github/workflows/release.yml                  builds one ZIP per pack when a release is published
 ```
 
-The folder name matters. ChattyLittleNPC finds packs by the pattern `ChattyLittleNpc_<Expansion>_<locale>_voiceovers` and reads the language from `<locale>`, which is a WoW client locale code: `enUS`, `deDE`, `frFR`, `esES`, `esMX`, `ptBR`, `itIT`, `ruRU`, `koKR`, `zhCN` or `zhTW`. The folder name, the `.toc` name and the global name in `Main.lua` must all match exactly.
+The folder name matters. ChattyLittleNPC finds packs by the pattern `ChattyLittleNpc_<Expansion>_<locale>_voiceovers` and reads the language from `<locale>`, which is a WoW client locale code: `enUS`, `deDE`, `frFR`, `esES`, `esMX`, `ptBR`, `itIT`, `ruRU`, `koKR`, `zhCN` or `zhTW`. The folder name and the `.toc` name must match exactly. The generator names the pack's global table after the folder.
 
 ### One-time setup
 ```powershell
@@ -48,12 +47,11 @@ python -m venv .venv
 Example: German (`deDE`).
 
 1. Create the folder `ChattyLittleNpc_Vanilla_deDE_voiceovers/`.
-2. Copy `Main.lua` and the `.toc` from the English folder into it.
+2. Copy the `.toc` from the English folder into it.
 3. Rename the `.toc` to `ChattyLittleNpc_Vanilla_deDE_voiceovers.toc`.
 4. In the `.toc`, change `## Title` to `Chatty Little NPC: Vanilla voiceovers (deDE)` so players can tell the packs apart in the AddOns list. Set `## Version` too.
-5. In `Main.lua`, replace every `ChattyLittleNpc_Vanilla_enUS_voiceovers` with `ChattyLittleNpc_Vanilla_deDE_voiceovers`. The `Contains...Voiceovers` flags are informational only; ChattyLittleNPC doesn't use them for playback.
-6. Put the audio directly in `ChattyLittleNpc_Vanilla_deDE_voiceovers/voiceovers/`, with no subfolders. Use the same file names as the English pack, because ChattyLittleNPC looks voiceovers up by file name (see [File naming](#file-naming)).
-7. Generate the file list (see the next section) and commit.
+5. Put the audio directly in `ChattyLittleNpc_Vanilla_deDE_voiceovers/voiceovers/`, with no subfolders. Use the same file names as the English pack, because ChattyLittleNPC looks voiceovers up by file name (see [File naming](#file-naming)).
+6. Generate the file list (see the next section) and commit.
 
 Nothing else needs to change. The generator, `deploy.py`, `release.py` and the release workflow all pick up the new folder automatically. The one exception is CurseForge: `pkgmeta.yaml` only describes the English pack.
 

@@ -78,7 +78,8 @@ def generate_voiceovers_lua_file(addon_folder):
     
     with open(output_file, 'w') as lua_file:
         lua_file.write(f"---@class {addon_name}\n")
-        lua_file.write(f"local {addon_name} = _G[\"{addon_name}\"]\n\n")
+        lua_file.write(f"local {addon_name} = {{}}\n")
+        lua_file.write(f"_G[\"{addon_name}\"] = {addon_name}\n\n")
         
         # Write Voiceovers list
         lua_file.write(f"{addon_name}.Voiceovers = {{\n")

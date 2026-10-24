@@ -1,5 +1,6 @@
 ---@class ChattyLittleNpc_Vanilla_enUS_voiceovers
-local ChattyLittleNpc_Vanilla_enUS_voiceovers = _G["ChattyLittleNpc_Vanilla_enUS_voiceovers"]
+local ChattyLittleNpc_Vanilla_enUS_voiceovers = {}
+_G["ChattyLittleNpc_Vanilla_enUS_voiceovers"] = ChattyLittleNpc_Vanilla_enUS_voiceovers
 
 ChattyLittleNpc_Vanilla_enUS_voiceovers.Voiceovers = {
     '1000_Comp.ogg',
