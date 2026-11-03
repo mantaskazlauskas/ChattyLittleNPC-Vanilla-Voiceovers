@@ -29,6 +29,7 @@ ChattyLittleNpc_Vanilla_deDE_voiceovers/       <- e.g. a German pack, same struc
 generate_voiceovers_list.py                    builds VoiceoversList.lua for every pack
 deploy.py                                      copies packs into your local WoW install
 release.py                                     tags a version and creates the GitHub release
+pyproject.toml, uv.lock                        Python dependencies for the scripts, managed with uv
 .github/workflows/release.yml                  builds one ZIP per pack when a release is published
 ```
 
@@ -36,9 +37,9 @@ The folder name matters. ChattyLittleNPC finds packs by the pattern `ChattyLittl
 
 ### One-time setup
 ```powershell
-python -m venv .venv
-.venv\Scripts\pip install mutagen     # the generator uses it to read audio durations
+uv sync      # creates .venv and installs mutagen, which the generator uses to read audio durations
 ```
+- Python dependencies are declared in `pyproject.toml` and pinned in `uv.lock`. Install [uv](https://docs.astral.sh/uv/) first if you don't have it.
 - `release.py` needs the [GitHub CLI](https://cli.github.com/), logged in with `gh auth login`.
 - `deploy.py` copies to `WOW_ROOT`, set near the top of the script. It is currently the maintainer's own path (`D:\Games\World of Warcraft`). **Change it to the folder where World of Warcraft is installed on your machine** (the one containing `_retail_`, `_classic_era_` and so on) before running the script.
 - Commits that change `.github/workflows/` can only be pushed with a token that has `workflow` scope. If a push is rejected with `refusing to allow an OAuth App to create or update workflow`, run `gh auth refresh -h github.com -s workflow` and then `gh auth setup-git`, and push again.
@@ -68,8 +69,8 @@ Files must be `.ogg`. The generator also lists `.mp3` files, but ChattyLittleNPC
 1. Add or replace `.ogg` files directly in the pack's `voiceovers/` folder (no subfolders).
 2. Regenerate `VoiceoversList.lua`:
    ```powershell
-   .venv\Scripts\python generate_voiceovers_list.py                                         # every pack
-   .venv\Scripts\python generate_voiceovers_list.py ChattyLittleNpc_Vanilla_deDE_voiceovers  # one pack
+   uv run generate_voiceovers_list.py                                         # every pack
+   uv run generate_voiceovers_list.py ChattyLittleNpc_Vanilla_deDE_voiceovers  # one pack
    ```
    ChattyLittleNPC only knows about files listed here, so a file that isn't in the list never plays.
 3. Bump `## Version` in that pack's `.toc`.
@@ -78,7 +79,7 @@ The release workflow regenerates the list too, so a stale committed list can't e
 
 ### Testing in game
 ```powershell
-.venv\Scripts\python deploy.py
+uv run deploy.py
 ```
 The script asks three things:
 1. **Language:** which pack to deploy. Press Enter for `enUS`, pick a number for another language, or `a` for all of them. This step is skipped when there is only one pack.

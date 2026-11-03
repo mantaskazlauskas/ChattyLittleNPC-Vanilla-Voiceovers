@@ -7,4 +7,6 @@ ignore:
   - .vscode
   - .github
   - .venv
+  - pyproject.toml
+  - uv.lock
   - .luarc.json
