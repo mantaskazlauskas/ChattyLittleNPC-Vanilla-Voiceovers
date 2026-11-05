@@ -2,7 +2,7 @@
 ## Title: Chatty Little NPC: Vanilla voiceovers (enUS)
 ## Notes: This is a quest voiceover pack for Chatty Little NPC addon.
 ## Author: Tuubby
-## Version: 3.3.5
+## Version: 3.3.6
 ## Dependencies: ChattyLittleNPC
 
 VoiceoversList.lua
