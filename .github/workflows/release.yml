@@ -25,23 +25,57 @@ jobs:
       - name: Install dependencies
         run: pip install mutagen
 
-      - name: Generate VoiceoversList.lua for every locale
-        run: python generate_voiceovers_list.py
+      # Each pack (one folder per locale) is released on its own tag (see release.py):
+      #   v3.3.6       -> ChattyLittleNpc_Vanilla_enUS_voiceovers
+      #   deDE-v1.0.0  -> ChattyLittleNpc_Vanilla_deDE_voiceovers
+      # An optional -beta/-alpha suffix is allowed. The tag's version must match the pack's ## Version.
+      - name: Find the pack for this tag
+        id: pack
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if [[ "$TAG" =~ ^([a-z]{2}[A-Z]{2})-v(.+)$ ]]; then
+            locale="${BASH_REMATCH[1]}"; version="${BASH_REMATCH[2]}"
+          elif [[ "$TAG" =~ ^v(.+)$ ]]; then
+            locale="enUS"; version="${BASH_REMATCH[1]}"
+          else
+            echo "::error::Tag '$TAG' is neither v<version> nor <locale>-v<version>"; exit 1
+          fi
+          version="${version%-beta}"; version="${version%-alpha}"
 
-      # One ZIP per addon folder (one folder per locale), e.g.
-      # ChattyLittleNpc_Vanilla_enUS_voiceovers-v3.3.4.zip and ChattyLittleNpc_Vanilla_deDE_voiceovers-v3.3.4.zip
-      - name: Create Addon ZIPs
+          folders=()
+          for dir in *_"${locale}"_voiceovers/; do
+            name="${dir%/}"
+            [ -f "$name/$name.toc" ] && folders+=("$name")
+          done
+          if [ "${#folders[@]}" -ne 1 ]; then
+            echo "::error::Expected exactly one pack folder for locale $locale, found ${#folders[@]}: ${folders[*]}"; exit 1
+          fi
+          name="${folders[0]}"
+
+          toc_version=$(sed -n 's/^## Version:[[:space:]]*//p' "$name/$name.toc" | tr -d '\r' | sed 's/[[:space:]]*$//')
+          if [ "$toc_version" != "$version" ]; then
+            echo "::error::Tag $TAG is version $version but $name.toc has ## Version $toc_version"; exit 1
+          fi
+
+          echo "Building $name $version ($locale)"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          # ZIP suffix without the locale prefix (the folder name already has it), e.g. v1.0.0 or v1.0.0-beta
+          echo "label=${TAG#"${locale}"-}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate VoiceoversList.lua
+        run: python generate_voiceovers_list.py "${{ steps.pack.outputs.name }}"
+
+      - name: Create Addon ZIP
+        env:
+          NAME: ${{ steps.pack.outputs.name }}
+          LABEL: ${{ steps.pack.outputs.label }}
         run: |
           mkdir dist
-          for dir in */; do
-            name="${dir%/}"
-            [ -f "$name/$name.toc" ] || continue
-            zip -r "dist/$name-${{ github.ref_name }}.zip" "$name" -x "$name/.vscode/*"
-          done
+          zip -r "dist/$NAME-$LABEL.zip" "$NAME" -x "$NAME/.vscode/*"
           ls -lh dist
-          [ -n "$(ls dist)" ] || { echo "No addon folders found"; exit 1; }
 
-      - name: Upload ZIPs to GitHub Release
+      - name: Upload ZIP to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*.zip

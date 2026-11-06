@@ -28,9 +28,9 @@ ChattyLittleNpc_Vanilla_enUS_voiceovers/       <- English pack
 ChattyLittleNpc_Vanilla_deDE_voiceovers/       <- e.g. a German pack, same structure
 generate_voiceovers_list.py                    builds VoiceoversList.lua for every pack
 deploy.py                                      copies packs into your local WoW install
-release.py                                     tags a version and creates the GitHub release
+release.py                                     tags and releases every pack whose version was bumped
 pyproject.toml, uv.lock                        Python dependencies for the scripts, managed with uv
-.github/workflows/release.yml                  builds one ZIP per pack when a release is published
+.github/workflows/release.yml                  builds the ZIP for the pack named by a published release's tag
 ```
 
 The folder name matters. ChattyLittleNPC finds packs by the pattern `ChattyLittleNpc_<Expansion>_<locale>_voiceovers` and reads the language from `<locale>`, which is a WoW client locale code: `enUS`, `deDE`, `frFR`, `esES`, `esMX`, `ptBR`, `itIT`, `ruRU`, `koKR`, `zhCN` or `zhTW`. The folder name and the `.toc` name must match exactly. The generator names the pack's global table after the folder.
@@ -50,7 +50,7 @@ Example: German (`deDE`).
 1. Create the folder `ChattyLittleNpc_Vanilla_deDE_voiceovers/`.
 2. Copy the `.toc` from the English folder into it.
 3. Rename the `.toc` to `ChattyLittleNpc_Vanilla_deDE_voiceovers.toc`.
-4. In the `.toc`, change `## Title` to `Chatty Little NPC: Vanilla voiceovers (deDE)` so players can tell the packs apart in the AddOns list. Set `## Version` too.
+4. In the `.toc`, change `## Title` to `Chatty Little NPC: Vanilla voiceovers (deDE)` so players can tell the packs apart in the AddOns list. Set `## Version` to the new pack's own version, e.g. `1.0.0`. Each pack is versioned and released separately.
 5. Put the audio directly in `ChattyLittleNpc_Vanilla_deDE_voiceovers/voiceovers/`, with no subfolders. Use the same file names as the English pack, because ChattyLittleNPC looks voiceovers up by file name (see [File naming](#file-naming)).
 6. Generate the file list (see the next section) and commit.
 
@@ -91,24 +91,27 @@ It then replaces the pack's folder in that version's `Interface/AddOns`. Run `/r
 ### Releasing
 **Only the repository owner (@mantaskazlauskas) publishes releases.** Contributors: open a pull request with your changes, and the owner will release them. What enforces this is write access: creating tags and releases needs it, and only the owner has it. As a safety net against accidental releases, the release workflow also skips building unless the owner published the release.
 
-All packs are released together under one tag. The tag comes from `## Version` in the **English** `.toc`.
+Each pack has its own version (`## Version` in its `.toc`) and its own GitHub release. A pack is only released when its version has no tag yet, so bumping a pack's version is what triggers its release.
 
-1. Bump `## Version` in the English `.toc`, plus any other pack that changed. If the versions differ, `release.py` warns you, but every pack is still built under the English version's tag.
+| Pack | Tag | ZIP |
+|---|---|---|
+| English | `v<version>`, e.g. `v3.3.6` | `ChattyLittleNpc_Vanilla_enUS_voiceovers-v3.3.6.zip` |
+| Other languages | `<locale>-v<version>`, e.g. `deDE-v1.0.0` | `ChattyLittleNpc_Vanilla_deDE_voiceovers-v1.0.0.zip` |
+
+Only English releases are marked as the repository's **Latest** release.
+
+1. Bump `## Version` in the `.toc` of each pack that changed.
 2. Commit and push to `main`.
-3. Dry run to check the version and tag:
+3. Dry run to see which packs would be released:
    ```powershell
    python release.py
    ```
-4. Create the release:
+   Packs whose version already has a tag are listed as skipped.
+4. Create the releases:
    ```powershell
-   python release.py --create                 # v3.3.5
-   python release.py --create --type beta     # v3.3.5-beta (marked as a pre-release)
-   python release.py --create --type alpha    # v3.3.5-alpha (marked as a pre-release)
+   python release.py --create                       # every bumped pack
+   python release.py --create --pack deDE           # only the German pack
+   python release.py --create --type beta           # tags get -beta (marked as a pre-release), e.g. deDE-v1.0.0-beta
    ```
-   This creates and pushes the git tag, then creates the GitHub release. To redo a version that already exists, first delete its GitHub release with `gh release delete v3.3.5`, then run with `--force`. `--force` only replaces the tag, not the release.
-5. The **Package WoW Addon** workflow runs automatically. It regenerates every `VoiceoversList.lua`, zips each pack folder, and attaches one ZIP per language to the release:
-   ```
-   ChattyLittleNpc_Vanilla_enUS_voiceovers-v3.3.5.zip
-   ChattyLittleNpc_Vanilla_deDE_voiceovers-v3.3.5.zip
-   ```
-   You can follow it in the repository's **Actions** tab. When it finishes, the ZIPs appear on the release page.
+   For each pack, this creates and pushes the git tag, then creates the GitHub release. Its notes only list changes since that pack's previous tag. To redo a version that already exists, first delete its GitHub release (e.g. `gh release delete deDE-v1.0.0`), then run with `--pack <locale> --force`. `--force` only replaces the tag, not the release.
+5. The **Package WoW Addon** workflow runs once per release. It works out the pack from the tag, checks that the tag matches the pack's `## Version`, regenerates that pack's `VoiceoversList.lua`, and attaches its ZIP to the release. You can follow it in the repository's **Actions** tab.
