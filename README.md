@@ -27,6 +27,7 @@ ChattyLittleNpc_Vanilla_enUS_voiceovers/       <- English pack
     voiceovers/                                   the .ogg files, directly in this folder
 ChattyLittleNpc_Vanilla_deDE_voiceovers/       <- e.g. a German pack, same structure
 generate_voiceovers_list.py                    builds VoiceoversList.lua for every pack
+compress_voiceovers.py                         re-encodes a pack's audio smaller (needs ffmpeg)
 deploy.py                                      copies packs into your local WoW install
 release.py                                     tags and releases every pack whose version was bumped
 pyproject.toml, uv.lock                        Python dependencies for the scripts, managed with uv
@@ -54,7 +55,7 @@ Example: German (`deDE`).
 5. Put the audio directly in `ChattyLittleNpc_Vanilla_deDE_voiceovers/voiceovers/`, with no subfolders. Use the same file names as the English pack, because ChattyLittleNPC looks voiceovers up by file name (see [File naming](#file-naming)).
 6. Generate the file list (see the next section) and commit.
 
-Nothing else needs to change. The generator, `deploy.py`, `release.py` and the release workflow all pick up the new folder automatically. The one exception is CurseForge: `pkgmeta.yaml` only describes the English pack.
+Nothing else needs to change. The generator, `deploy.py`, `release.py` and the release workflow all pick up the new folder automatically.
 
 ### File naming
 Files must be `.ogg`. The generator also lists `.mp3` files, but ChattyLittleNPC only looks for `.ogg` names, so an `.mp3` never plays.
@@ -76,6 +77,18 @@ Files must be `.ogg`. The generator also lists `.mp3` files, but ChattyLittleNPC
 3. Bump `## Version` in that pack's `.toc`.
 
 The release workflow regenerates the list too, so a stale committed list can't end up in a release. Regenerating locally is still needed for local testing.
+
+### Shrinking a pack
+CurseForge limits upload size, so keep packs in the English pack's format: mono, 22050 Hz Vorbis at about 30–35 kbps. TTS output at 44.1 kHz has practically nothing above 11 kHz, so re-encoding it halves its size with no audible loss. This needs [ffmpeg](https://ffmpeg.org/) on PATH (`winget install ffmpeg`).
+
+```powershell
+# Try it on 50 files first and listen to the results
+uv run compress_voiceovers.py ChattyLittleNpc_Vanilla_deDE_voiceovers --output ../compressed_test --limit 50
+# Replace the pack's files, then regenerate the list (durations change slightly)
+uv run compress_voiceovers.py ChattyLittleNpc_Vanilla_deDE_voiceovers --in-place
+uv run generate_voiceovers_list.py ChattyLittleNpc_Vanilla_deDE_voiceovers
+```
+Each file is checked before it replaces the original: it must decode, keep its duration and be smaller. Files already at 22050 Hz or lower are skipped, so it is safe to re-run. `--in-place` overwrites the originals, so keep a copy if the pack isn't committed yet. For a smaller result, `--sample-rate 16000` gives about 2.5× instead of 2×, but sounds noticeably duller. A lower `--quality` doesn't help at 22050 Hz.
 
 ### Testing in game
 ```powershell
