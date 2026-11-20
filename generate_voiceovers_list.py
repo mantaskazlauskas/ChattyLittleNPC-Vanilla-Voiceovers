@@ -1,9 +1,10 @@
 """
 Generate VoiceoversList.lua for each voiceover pack addon folder.
 
-An addon folder is a subdirectory containing <same-name>.toc, one per locale:
-    ChattyLittleNpc_Vanilla_enUS_voiceovers/   -> English
-    ChattyLittleNpc_Vanilla_deDE_voiceovers/   -> German
+An addon folder is a subdirectory containing <same-name>.toc:
+    ChattyLittleNpc_Vanilla_enUS_voiceovers/          -> English quests
+    ChattyLittleNpc_Vanilla_Gossip_enUS_voiceovers/   -> English books & gossip
+    ChattyLittleNpc_Vanilla_deDE_voiceovers/          -> German
 
 Usage:
     python generate_voiceovers_list.py                 # every addon folder

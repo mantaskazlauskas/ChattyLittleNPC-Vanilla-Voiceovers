@@ -5,9 +5,10 @@ Copies the addon folder into the selected WoW version's Interface/AddOns directo
 
 Adapted from the ChattyLittleNpc deploy.py. Addon folders are discovered by
 looking for a directory whose name matches a .toc file inside it, rather than
-being hardcoded. A voiceover repo can hold one addon folder per locale; the
-script asks which language to deploy (Enter = enUS), then which WoW version,
-then asks for confirmation.
+being hardcoded. A voiceover repo can hold several addon folders per locale
+(the quest pack and the books & gossip pack); the script asks which language
+to deploy (Enter = enUS) and deploys all of that language's packs, then asks
+which WoW version, then asks for confirmation.
 
 Usage:
     python deploy.py
@@ -76,34 +77,44 @@ def get_locale(source):
 
 def prompt_locale(sources):
     """
-    Ask which language pack to deploy; Enter picks the English pack.
+    Ask which language to deploy; Enter picks English. A language can ship as
+    several packs (quests and books & gossip, see split_voiceovers.py), which
+    only work as a set, so every pack of the chosen language is deployed.
     Returns a list of addon folders (all of them for 'a').
     """
     if len(sources) == 1:
         return sources
 
-    default = next((i for i, s in enumerate(sources, start=1) if get_locale(s) == DEFAULT_LOCALE), 1)
+    by_locale = {}
+    for source in sources:
+        by_locale.setdefault(get_locale(source), []).append(source)
+    locales = sorted(by_locale)
+    if len(locales) == 1:
+        return sources
+
+    default = locales.index(DEFAULT_LOCALE) + 1 if DEFAULT_LOCALE in locales else 1
 
     print()
     print("Available voiceover languages:")
     print()
-    for i, source in enumerate(sources, start=1):
+    for i, locale in enumerate(locales, start=1):
         marker = "  (default)" if i == default else ""
-        print(f"  [{i}] {get_locale(source)}  {os.path.basename(source)}{marker}")
+        packs = ", ".join(os.path.basename(s) for s in by_locale[locale])
+        print(f"  [{i}] {locale}  {packs}{marker}")
     print("  [a] All of the above")
     print()
 
     while True:
-        raw = input(f"Select language [1-{len(sources)}, a, Enter = {get_locale(sources[default - 1])}]: ").strip().lower()
+        raw = input(f"Select language [1-{len(locales)}, a, Enter = {locales[default - 1]}]: ").strip().lower()
         if raw == "":
-            return [sources[default - 1]]
+            return by_locale[locales[default - 1]]
         if raw == "a":
             return sources
         if raw.isdigit():
             choice = int(raw)
-            if 1 <= choice <= len(sources):
-                return [sources[choice - 1]]
-        print(f"  Please enter a number between 1 and {len(sources)}, 'a', or press Enter.")
+            if 1 <= choice <= len(locales):
+                return by_locale[locales[choice - 1]]
+        print(f"  Please enter a number between 1 and {len(locales)}, 'a', or press Enter.")
 
 
 def discover_versions(wow_root):

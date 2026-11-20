@@ -4,9 +4,18 @@ AI-generated voiceover packs for the [ChattyLittleNPC](https://github.com/mantas
 ## For players
 
 ### Installing
+English comes as two addons, because CurseForge limits how big one addon can be. Install both:
+
+| Addon | Contains | CurseForge |
+|---|---|---|
+| `ChattyLittleNpc_Vanilla_enUS_voiceovers` | quests | [chatty-little-npc-vanilla](https://www.curseforge.com/wow/addons/chatty-little-npc-vanilla) |
+| `ChattyLittleNpc_Vanilla_Gossip_enUS_voiceovers` | gossip, books, objects, quest greetings | [chatty-little-npc-classic-forever-books-and-gossip](https://www.curseforge.com/wow/addons/chatty-little-npc-classic-forever-books-and-gossip) |
+
 1. Install ChattyLittleNPC.
-2. Download the ZIP for your language from the [Releases](https://github.com/mantaskazlauskas/ChattyLittleNPC-Vanilla-Voiceovers/releases) page, e.g. `ChattyLittleNpc_Vanilla_enUS_voiceovers-v3.3.5.zip`.
-3. Extract it into `World of Warcraft/<version>/Interface/AddOns/`. You should end up with `Interface/AddOns/ChattyLittleNpc_Vanilla_enUS_voiceovers/`.
+2. Download the ZIPs for your language from the [Releases](https://github.com/mantaskazlauskas/ChattyLittleNPC-Vanilla-Voiceovers/releases) page, e.g. `ChattyLittleNpc_Vanilla_enUS_voiceovers-v3.4.0.zip` and `ChattyLittleNpc_Vanilla_Gossip_enUS_voiceovers-v1.0.0.zip`.
+3. Extract them into `World of Warcraft/<version>/Interface/AddOns/`. You should end up with `Interface/AddOns/ChattyLittleNpc_Vanilla_enUS_voiceovers/` and `Interface/AddOns/ChattyLittleNpc_Vanilla_Gossip_enUS_voiceovers/`.
+
+Up to 3.3.8 the English pack held everything. From 3.4.0 it only has the quests, so install the books & gossip addon too, or NPC gossip, books and objects go silent.
 
 By default, ChattyLittleNPC plays voiceovers in your game client's language if a pack for it is installed, and English otherwise. When your language's pack has no recording for a line, it plays the English one. Install the English pack as well to get that fallback. You can pick the language and turn the fallback off in ChattyLittleNPC's settings.
 
@@ -18,14 +27,16 @@ The English pack folder was renamed from `ChattyLittleNpc_Vanilla_voiceovers` to
 ## For maintainers
 
 ### Repository layout
-Every top-level folder that contains a `.toc` with the same name is one addon, and each addon is one language:
+Every top-level folder that contains a `.toc` with the same name is one addon. Each addon is one language, and a language can be split into a quest pack and a books & gossip pack to stay under CurseForge's size limit:
 
 ```
-ChattyLittleNpc_Vanilla_enUS_voiceovers/       <- English pack
-    ChattyLittleNpc_Vanilla_enUS_voiceovers.toc   version, title, file list
-    VoiceoversList.lua                            GENERATED: the pack's global table, file list + durations
-    voiceovers/                                   the .ogg files, directly in this folder
-ChattyLittleNpc_Vanilla_deDE_voiceovers/       <- e.g. a German pack, same structure
+ChattyLittleNpc_Vanilla_enUS_voiceovers/          <- English quest pack
+    ChattyLittleNpc_Vanilla_enUS_voiceovers.toc      version, title, file list
+    VoiceoversList.lua                               GENERATED: the pack's global table, file list + durations
+    voiceovers/                                      the .ogg files, directly in this folder
+ChattyLittleNpc_Vanilla_Gossip_enUS_voiceovers/   <- English books & gossip pack, same structure
+ChattyLittleNpc_Vanilla_deDE_voiceovers/          <- German pack (not split yet), same structure
+split_voiceovers.py                            moves each audio file into the right pack of its language
 generate_voiceovers_list.py                    builds VoiceoversList.lua for every pack
 compress_voiceovers.py                         re-encodes a pack's audio smaller (needs ffmpeg)
 deploy.py                                      copies packs into your local WoW install
@@ -34,7 +45,7 @@ pyproject.toml, uv.lock                        Python dependencies for the scrip
 .github/workflows/release.yml                  builds the ZIP for the pack named by a published release's tag
 ```
 
-The folder name matters. ChattyLittleNPC finds packs by the pattern `ChattyLittleNpc_<Expansion>_<locale>_voiceovers` and reads the language from `<locale>`, which is a WoW client locale code: `enUS`, `deDE`, `frFR`, `esES`, `esMX`, `ptBR`, `itIT`, `ruRU`, `koKR`, `zhCN` or `zhTW`. The folder name and the `.toc` name must match exactly. The generator names the pack's global table after the folder.
+The folder name matters. ChattyLittleNPC finds packs by the pattern `ChattyLittleNpc_<Expansion>_<locale>_voiceovers` (for the books & gossip pack, `<Expansion>` is `Vanilla_Gossip`) and reads the language from `<locale>`, which is a WoW client locale code: `enUS`, `deDE`, `frFR`, `esES`, `esMX`, `ptBR`, `itIT`, `ruRU`, `koKR`, `zhCN` or `zhTW`. The folder name and the `.toc` name must match exactly. The generator names the pack's global table after the folder.
 
 ### One-time setup
 ```powershell
@@ -66,15 +77,21 @@ Files must be `.ogg`. The generator also lists `.mp3` files, but ChattyLittleNPC
 | Quest greeting | `<npcId>_QuestGreeting.ogg` |
 | Gossip / game object / item | `<id>_Gossip_<hash>[_<Male\|Female\|Neutral>].ogg`, likewise `_GameObject_` and `_Item_`. The gender suffix is optional. |
 
+Quest text files, `<questId>_<phase>.ogg` and `<questId>_<phase>_<npcId>.ogg`, go in the quest pack. Everything else goes in the books & gossip pack. ChattyLittleNPC looks a file up in every loaded pack, so the split only matters for download size.
+
 ### Adding or updating voiceovers
-1. Add or replace `.ogg` files directly in the pack's `voiceovers/` folder (no subfolders).
+1. Add or replace `.ogg` files directly in the pack's `voiceovers/` folder (no subfolders). For a split language you can drop them into either pack and let the script sort them:
+   ```powershell
+   uv run split_voiceovers.py          # dry run for enUS: shows what would move
+   uv run split_voiceovers.py --move   # moves quest files to the quest pack, everything else to books & gossip
+   ```
 2. Regenerate `VoiceoversList.lua`:
    ```powershell
    uv run generate_voiceovers_list.py                                         # every pack
    uv run generate_voiceovers_list.py ChattyLittleNpc_Vanilla_deDE_voiceovers  # one pack
    ```
    ChattyLittleNPC only knows about files listed here, so a file that isn't in the list never plays.
-3. Bump `## Version` in that pack's `.toc`.
+3. Bump `## Version` in the `.toc` of each pack that changed.
 
 The release workflow regenerates the list too, so a stale committed list can't end up in a release. Regenerating locally is still needed for local testing.
 
@@ -95,7 +112,7 @@ Each file is checked before it replaces the original: it must decode, keep its d
 uv run deploy.py
 ```
 The script asks three things:
-1. **Language:** which pack to deploy. Press Enter for `enUS`, pick a number for another language, or `a` for all of them. This step is skipped when there is only one pack.
+1. **Language:** which language to deploy. Every pack of that language is deployed, so English deploys both the quest pack and the books & gossip pack. Press Enter for `enUS`, pick a number for another language, or `a` for all of them. This step is skipped when there is only one language.
 2. **WoW version:** Retail, Classic Era, Anniversary, and so on.
 3. **Confirmation:** it lists the pack(s) and the target folder. Type `y` to go ahead.
 
@@ -108,10 +125,13 @@ Each pack has its own version (`## Version` in its `.toc`) and its own GitHub re
 
 | Pack | Tag | ZIP |
 |---|---|---|
-| English | `v<version>`, e.g. `v3.3.6` | `ChattyLittleNpc_Vanilla_enUS_voiceovers-v3.3.6.zip` |
+| English quests | `v<version>`, e.g. `v3.4.0` | `ChattyLittleNpc_Vanilla_enUS_voiceovers-v3.4.0.zip` |
+| English books & gossip | `Gossip-enUS-v<version>`, e.g. `Gossip-enUS-v1.0.0` | `ChattyLittleNpc_Vanilla_Gossip_enUS_voiceovers-v1.0.0.zip` |
 | Other languages | `<locale>-v<version>`, e.g. `deDE-v1.0.0` | `ChattyLittleNpc_Vanilla_deDE_voiceovers-v1.0.0.zip` |
 
-Only English releases are marked as the repository's **Latest** release.
+Only releases of the English quest pack are marked as the repository's **Latest** release.
+
+On CurseForge the two English packs are separate projects. Each one lists the other as a **Required Dependency** (under the project's Relations, or when uploading a file), so the CurseForge app installs both.
 
 1. Bump `## Version` in the `.toc` of each pack that changed.
 2. Commit and push to `main`.
@@ -123,8 +143,9 @@ Only English releases are marked as the repository's **Latest** release.
 4. Create the releases:
    ```powershell
    python release.py --create                       # every bumped pack
-   python release.py --create --pack deDE           # only the German pack
+   python release.py --create --pack enUS           # only the English packs (quests and books & gossip)
+   python release.py --create --pack Gossip-enUS    # only the English books & gossip pack
    python release.py --create --type beta           # tags get -beta (marked as a pre-release), e.g. deDE-v1.0.0-beta
    ```
-   For each pack, this creates and pushes the git tag, then creates the GitHub release. Its notes only list changes since that pack's previous tag. To redo a version that already exists, first delete its GitHub release (e.g. `gh release delete deDE-v1.0.0`), then run with `--pack <locale> --force`. `--force` only replaces the tag, not the release.
+   For each pack, this creates and pushes the git tag, then creates the GitHub release. Its notes only list changes since that pack's previous tag. To redo a version that already exists, first delete its GitHub release (e.g. `gh release delete deDE-v1.0.0`), then run with `--pack <pack key> --force`, e.g. `--pack deDE` or `--pack Gossip-enUS`. `--force` only replaces the tag, not the release.
 5. The **Package WoW Addon** workflow runs once per release. It works out the pack from the tag, checks that the tag matches the pack's `## Version`, regenerates that pack's `VoiceoversList.lua`, and attaches its ZIP to the release. You can follow it in the repository's **Actions** tab.

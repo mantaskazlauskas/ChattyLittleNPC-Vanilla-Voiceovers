@@ -25,43 +25,43 @@ jobs:
       - name: Install dependencies
         run: pip install mutagen
 
-      # Each pack (one folder per locale) is released on its own tag (see release.py):
-      #   v3.3.6       -> ChattyLittleNpc_Vanilla_enUS_voiceovers
-      #   deDE-v1.0.0  -> ChattyLittleNpc_Vanilla_deDE_voiceovers
+      # Each pack has its own tag series (see release.py). A language ships as two packs,
+      # quests and books & gossip (see split_voiceovers.py):
+      #   v3.4.0              -> ChattyLittleNpc_Vanilla_enUS_voiceovers
+      #   deDE-v1.0.0         -> ChattyLittleNpc_Vanilla_deDE_voiceovers
+      #   Gossip-enUS-v1.0.0  -> ChattyLittleNpc_Vanilla_Gossip_enUS_voiceovers
       # An optional -beta/-alpha suffix is allowed. The tag's version must match the pack's ## Version.
       - name: Find the pack for this tag
         id: pack
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          if [[ "$TAG" =~ ^([a-z]{2}[A-Z]{2})-v(.+)$ ]]; then
-            locale="${BASH_REMATCH[1]}"; version="${BASH_REMATCH[2]}"
+          part=""
+          if [[ "$TAG" =~ ^([A-Za-z]+)-([a-z]{2}[A-Z]{2})-v(.+)$ ]]; then
+            part="${BASH_REMATCH[1]}"; locale="${BASH_REMATCH[2]}"; rest="${BASH_REMATCH[3]}"
+          elif [[ "$TAG" =~ ^([a-z]{2}[A-Z]{2})-v(.+)$ ]]; then
+            locale="${BASH_REMATCH[1]}"; rest="${BASH_REMATCH[2]}"
           elif [[ "$TAG" =~ ^v(.+)$ ]]; then
-            locale="enUS"; version="${BASH_REMATCH[1]}"
+            locale="enUS"; rest="${BASH_REMATCH[1]}"
           else
-            echo "::error::Tag '$TAG' is neither v<version> nor <locale>-v<version>"; exit 1
+            echo "::error::Tag '$TAG' is not v<version>, <locale>-v<version> or <Part>-<locale>-v<version>"; exit 1
           fi
-          version="${version%-beta}"; version="${version%-alpha}"
+          version="${rest%-beta}"; version="${version%-alpha}"
 
-          folders=()
-          for dir in *_"${locale}"_voiceovers/; do
-            name="${dir%/}"
-            [ -f "$name/$name.toc" ] && folders+=("$name")
-          done
-          if [ "${#folders[@]}" -ne 1 ]; then
-            echo "::error::Expected exactly one pack folder for locale $locale, found ${#folders[@]}: ${folders[*]}"; exit 1
+          name="ChattyLittleNpc_Vanilla_${part:+${part}_}${locale}_voiceovers"
+          if [ ! -f "$name/$name.toc" ]; then
+            echo "::error::Tag $TAG names pack $name, but $name/$name.toc does not exist"; exit 1
           fi
-          name="${folders[0]}"
 
           toc_version=$(sed -n 's/^## Version:[[:space:]]*//p' "$name/$name.toc" | tr -d '\r' | sed 's/[[:space:]]*$//')
           if [ "$toc_version" != "$version" ]; then
             echo "::error::Tag $TAG is version $version but $name.toc has ## Version $toc_version"; exit 1
           fi
 
-          echo "Building $name $version ($locale)"
+          echo "Building $name $version"
           echo "name=$name" >> "$GITHUB_OUTPUT"
-          # ZIP suffix without the locale prefix (the folder name already has it), e.g. v1.0.0 or v1.0.0-beta
-          echo "label=${TAG#"${locale}"-}" >> "$GITHUB_OUTPUT"
+          # ZIP suffix without the pack key (the folder name already has it), e.g. v1.0.0 or v1.0.0-beta
+          echo "label=v${rest}" >> "$GITHUB_OUTPUT"
 
       - name: Generate VoiceoversList.lua
         run: python generate_voiceovers_list.py "${{ steps.pack.outputs.name }}"

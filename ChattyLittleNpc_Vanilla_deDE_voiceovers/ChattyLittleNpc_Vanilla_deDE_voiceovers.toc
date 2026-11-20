@@ -4,5 +4,6 @@
 ## Author: WoW-Chatty-DE-Pipeline
 ## Version: 1.0.0
 ## Dependencies: ChattyLittleNpc
+## Group: ChattyLittleNpc
 
 VoiceoversList.lua
