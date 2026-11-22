@@ -2,7 +2,7 @@
 ## Title: Chatty Little NPC: Vanilla books & gossip voiceovers (enUS)
 ## Notes: Gossip, book, object and quest greeting voiceovers for Chatty Little NPC. Install it together with the Vanilla quest voiceover pack.
 ## Author: Tuubby
-## Version: 1.0.0
+## Version: 1.0.1
 ## Dependencies: ChattyLittleNPC
 ## Group: ChattyLittleNpc
 

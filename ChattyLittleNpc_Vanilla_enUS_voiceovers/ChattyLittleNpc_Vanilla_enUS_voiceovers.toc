@@ -2,7 +2,7 @@
 ## Title: Chatty Little NPC: Vanilla quest voiceovers (enUS)
 ## Notes: Quest voiceovers for Chatty Little NPC. Install it together with the Vanilla books & gossip voiceover pack.
 ## Author: Tuubby
-## Version: 3.4.0
+## Version: 3.4.1
 ## Dependencies: ChattyLittleNPC
 ## Group: ChattyLittleNpc
 
